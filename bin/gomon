@@ -6,6 +6,7 @@ var argv        = require('minimist')(process.argv.slice(2));
 var watch       = require('watch');
 var colorsTmpl  = require('colors');
 var gorun;
+var gobuild;
 
 // check
 if (argv._.length <= 0 || argv._ > 1) {
@@ -15,10 +16,7 @@ if (argv._.length <= 0 || argv._ > 1) {
 }
 
 // setup
-var maindir = argv._[0].split("/");
-maindir.pop();
-maindir = maindir.join('/');
-maindir = maindir.length <= 0 ? process.cwd() : maindir;
+var maindir = "./"
 var processName = argv._[0].split("/").pop().split(".")[0];
 var path = argv._[0];
 
@@ -27,27 +25,38 @@ var path = argv._[0];
 
 watch.createMonitor(maindir, function (monitor) {
   monitor.files['.go'];
-  monitor.on("created", killAll);
-  monitor.on("changed", killAll);
-  monitor.on("removed", killAll);
-});
+  monitor.on("created", run);
+  monitor.on("changed", run);
+  monitor.on("removed", run);
+})
 
-function run () {
-  console.log('go run'.green, path);
-  
-  gorun = spawn('go', ['run', path]);
+function run (e) {
+  if(e !== "server.exe" && (e === undefined || e.indexOf('.go') !== -1 || e.indexOf('.json') !== -1))
+  {
+    if(gorun !== undefined)
+      gorun.kill();
+
+    build();
+  }
+}
+
+function build() {
+  gobuild = spawn('go', ['build', path]);
+  gobuild.stdout.on('close', function (data) {
+    console.log("Finished building");
+
+    start();
+  });
+}
+
+function start() {
+  gorun = spawn('server.exe');
+
   gorun.stdout.on('data', function (data) {
     console.log('stdout: ' + data);
   });
   gorun.stderr.on('data', function (data) {
     console.log('stderr: ' + data);
-  });
-}
-
-function killAll () {
-  console.log('>> restart'.red);
-  exec('killall '+processName, function (err, stdout, stderr) {
-    run();
   });
 }
 
