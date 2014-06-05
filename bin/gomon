@@ -7,6 +7,11 @@ var watch       = require('watch');
 var colorsTmpl  = require('colors');
 var gorun;
 var gobuild;
+var buildissue  = false;
+
+colorsTmpl.setTheme({
+  data: 'grey'
+});
 
 // check
 if (argv._.length <= 0 || argv._ > 1) {
@@ -24,7 +29,6 @@ var path = argv._[0];
 // process.env.GOPATH = process.cwd() + (process.env.GOPATH && ":" + process.env.GOPATH || "");
 
 watch.createMonitor(maindir, function (monitor) {
-  monitor.files['.go'];
   monitor.on("created", run);
   monitor.on("changed", run);
   monitor.on("removed", run);
@@ -33,6 +37,8 @@ watch.createMonitor(maindir, function (monitor) {
 function run (e) {
   if(e !== "server.exe" && (e === undefined || e.indexOf('.go') !== -1 || e.indexOf('.json') !== -1))
   {
+    console.log('Rebuilding server...'.green)
+
     if(gorun !== undefined)
       gorun.kill();
 
@@ -41,11 +47,24 @@ function run (e) {
 }
 
 function build() {
+  buildissue = false;
   gobuild = spawn('go', ['build', path]);
   gobuild.stdout.on('close', function (data) {
-    console.log("Finished building");
+    if(buildissue) {
+      console.log("Couldn't rebuild the server.".red);
+    } else {
+      start();
+    }
+  });
 
-    start();
+  gobuild.stdout.on('data', function (data) {
+    console.log('Building issue: '.red + data.toString());
+    buildissue = true;
+  });
+
+  gobuild.stderr.on('data', function (data) {
+    console.log('Building issue: '.red + data.toString());
+    buildissue = true;
   });
 }
 
@@ -53,10 +72,11 @@ function start() {
   gorun = spawn('server.exe');
 
   gorun.stdout.on('data', function (data) {
-    console.log('stdout: ' + data);
+    console.log(data.toString());
   });
+
   gorun.stderr.on('data', function (data) {
-    console.log('stderr: ' + data);
+    console.log(data.toString());
   });
 }
 
