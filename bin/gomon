@@ -8,6 +8,7 @@ var colorsTmpl  = require('colors');
 var gorun;
 var gobuild;
 var buildissue  = false;
+var fsTimeout;
 
 colorsTmpl.setTheme({
   data: 'grey'
@@ -25,24 +26,38 @@ var maindir = "./"
 var processName = argv._[0].split("/").pop().split(".")[0];
 var path = argv._[0];
 
+// Watch these directories
+var directories = [
+  ".",
+  "tw",
+  "twutil",
+  "twcontroller",
+  "twcache",
+  "twdata",
+  "twstruct"
+]
+
 // setting the GOPATH
 // process.env.GOPATH = process.cwd() + (process.env.GOPATH && ":" + process.env.GOPATH || "");
 
-watch.createMonitor(maindir, function (monitor) {
-  monitor.on("created", run);
-  monitor.on("changed", run);
-  monitor.on("removed", run);
-})
+directories.forEach(function(e) {
+  fs.watch(e, onChange);
+});
 
-function run (e) {
-  if(e !== "server.exe" && (e === undefined || e.indexOf('.go') !== -1 || e.indexOf('.json') !== -1))
+function onChange(e, f) {
+  if(!fsTimeout)
   {
-    console.log('Rebuilding server...'.green)
+    if((f === null || f === undefined || f.indexOf('.go') !== -1 || f.indexOf('.json') !== -1))
+    {
+      console.log('Rebuilding server...'.green)
 
-    if(gorun !== undefined)
-      gorun.kill();
+      fsTimeout = setTimeout(function() { fsTimeout=null }, 1000)
+      
+      if(gorun !== undefined)
+        gorun.kill();
 
-    build();
+      build();
+    }
   }
 }
 
@@ -80,4 +95,4 @@ function start() {
   });
 }
 
-run();
+onChange();
