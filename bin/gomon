@@ -47,7 +47,7 @@ directories.forEach(function(e) {
 function onChange(e, f) {
   if(!fsTimeout)
   {
-    if((f === null || f === undefined || f.indexOf('.go') !== -1 || f.indexOf('.json') !== -1))
+    if((f === null || f === undefined || f.indexOf('.go') !== -1))
     {
       console.log('Rebuilding server...'.green)
 
