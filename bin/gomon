@@ -32,7 +32,6 @@ var directories = [
   "tw",
   "twutil",
   "twcontroller",
-  "twcache",
   "twdata",
   "twstruct"
 ]
