@@ -5,6 +5,7 @@ var exec        = require('child_process').exec;
 var argv        = require('minimist')(process.argv.slice(2));
 var watch       = require('watch');
 var colorsTmpl  = require('colors');
+var mv          = require('mv');
 var gorun;
 var gobuild;
 var buildissue  = false;
@@ -46,14 +47,11 @@ directories.forEach(function(e) {
 function onChange(e, f) {
   if(!fsTimeout)
   {
-    if((f === null || f === undefined || f.indexOf('.go') !== -1))
+    if(f !== undefined && f !== null && f.indexOf('.go') !== -1)
     {
       console.log('Rebuilding server...'.green)
 
       fsTimeout = setTimeout(function() { fsTimeout=null }, 1000)
-      
-      if(gorun !== undefined)
-        gorun.kill();
 
       build();
     }
@@ -62,12 +60,14 @@ function onChange(e, f) {
 
 function build() {
   buildissue = false;
-  gobuild = spawn('go', ['build', path]);
+  gobuild = spawn('go', ['build', '-o', 'server_new.exe', path]);
   gobuild.stdout.on('close', function (data) {
     if(buildissue) {
       console.log("Couldn't rebuild the server.".red);
     } else {
-      start();
+      if(gorun !== undefined)
+        gorun.kill();
+      else start();
     }
   });
 
@@ -83,15 +83,25 @@ function build() {
 }
 
 function start() {
-  gorun = spawn('server.exe');
+  if(fs.existsSync('server.exe')) {
+    fs.unlinkSync('server.exe');
+  }
 
-  gorun.stdout.on('data', function (data) {
-    console.log(data.toString());
-  });
+  mv('server_new.exe', 'server.exe', function(err) {
+    gorun = spawn('server.exe');
 
-  gorun.stderr.on('data', function (data) {
-    console.log(data.toString());
+    gorun.stdout.on('data', function (data) {
+      console.log(data.toString());
+    });
+
+    gorun.stderr.on('data', function (data) {
+      console.log(data.toString());
+    });   
+
+    gorun.on('close', function (code, signal) {
+      start();
+    });
   });
 }
 
-onChange();
+build();
