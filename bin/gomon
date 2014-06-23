@@ -6,6 +6,7 @@ var argv        = require('minimist')(process.argv.slice(2));
 var watch       = require('watch');
 var colorsTmpl  = require('colors');
 var mv          = require('mv');
+var json        = require('json-file');
 var gorun;
 var gobuild;
 var buildissue  = false;
@@ -21,6 +22,9 @@ if (argv._.length <= 0 || argv._ > 1) {
   process.exit(2);
   return;
 }
+
+var file = json.read('./config.json');
+var developer = file.get('Developer');  // eg. "1.0.0"
 
 // setup
 var maindir = "./"
@@ -83,24 +87,34 @@ function build() {
 }
 
 function start() {
-  if(fs.existsSync('server.exe')) {
-    fs.unlinkSync('server.exe');
+  if(fs.existsSync('server_new.exe')) {
+    if(fs.existsSync('server.exe')) {
+      fs.unlinkSync('server.exe');
+    }
+
+    mv('server_new.exe', 'server.exe', function(err) {
+      spawnServer();
+    });
+  } else {
+    spawnServer();
   }
+}
 
-  mv('server_new.exe', 'server.exe', function(err) {
-    gorun = spawn('server.exe');
+function spawnServer() {
+  gorun = spawn('server.exe');
 
+  if(developer) {
     gorun.stdout.on('data', function (data) {
       console.log(data.toString());
     });
 
     gorun.stderr.on('data', function (data) {
       console.log(data.toString());
-    });   
+    });  
+  } 
 
-    gorun.on('close', function (code, signal) {
-      start();
-    });
+  gorun.on('close', function (code, signal) {
+    start();
   });
 }
 
