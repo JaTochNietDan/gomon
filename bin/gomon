@@ -111,8 +111,12 @@ function spawnServer() {
     console.log(data.toString());
   });  
 
-  gorun.on('close', function (code, signal) {
+  gorun.on('exit', function (code, signal) {
     start();
+  });
+
+  gorun.on('error', function (code, signal) {
+    console.log('Error Event:', code);
   });
 }
 
