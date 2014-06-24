@@ -103,15 +103,13 @@ function start() {
 function spawnServer() {
   gorun = spawn('server.exe');
 
-  if(developer) {
-    gorun.stdout.on('data', function (data) {
-      console.log(data.toString());
-    });
+  gorun.stdout.on('data', function (data) {
+    console.log(data.toString());
+  });
 
-    gorun.stderr.on('data', function (data) {
-      console.log(data.toString());
-    });  
-  } 
+  gorun.stderr.on('data', function (data) {
+    console.log(data.toString());
+  });  
 
   gorun.on('close', function (code, signal) {
     start();
